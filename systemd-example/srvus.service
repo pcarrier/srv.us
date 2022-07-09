@@ -1,0 +1,11 @@
+[Service]
+ExecStart=ssh srv.us -o StrictHostKeyChecking=accept-new -TR 1:localhost:80
+User=srvus
+Restart=on-failure
+RestartSec=1s
+
+[Unit]
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
