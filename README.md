@@ -34,7 +34,7 @@ URLs are stable for a given SSH key and number (1 and 2 in examples), with no ri
 
 When there are multiple tunnels for a URL, client connections are spread between them randomly.
 
-`ssh` will terminate when the connection is lost or the service restarted. To reconnect automatically in your shell, use `until ssh srv.us -R 1:localhost:3000; do echo Restarting…; done`. To use as a service on Linux that restarts automatically, see [systemd-example](systemd-example/).
+`ssh` will terminate when the connection is lost or the service restarted. To reconnect automatically in your shell, use `until ssh srv.us -R 1:localhost:3000; do echo Restarting…; done`. To use as a service on Linux that reconnects automatically, see [systemd-example](systemd-example/).
 
 ### Privacy
 
