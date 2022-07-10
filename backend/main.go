@@ -292,7 +292,7 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 
 	defer func() {
 		if err := sshChannel.Close(); err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("Could not close SSH channel for HTTPS connection (%v)", err)
+			log.Printf("%v:%s→%v channel close failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
 		}
 	}()
 
@@ -311,10 +311,10 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 		b, err := io.Copy(https, sshChannel)
 		log.Printf("%v:%s→%v xfer %d", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), b)
 		if err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("Could not copy from SSH to HTTPS (%v)", err)
+			log.Printf("%v:%s→%v copy failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
 		}
 		if err := https.CloseWrite(); err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("Could not close copy from SSH to HTTPS (%v)", err)
+			log.Printf("%v:%s→%v close failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
 		}
 		wg.Done()
 	}()
@@ -323,10 +323,10 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 		b, err := io.Copy(sshChannel, https)
 		log.Printf("%v:%s←%v xfer %d", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), b)
 		if err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("Could not copy from HTTPS to SSH (%v)", err)
+			log.Printf("%v:%s←%v copy failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
 		}
 		if err := sshChannel.CloseWrite(); err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("Could not close copy from HTTPS to SSH (%v)", err)
+			log.Printf("%v:%s←%v close failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
 		}
 		wg.Done()
 	}()
