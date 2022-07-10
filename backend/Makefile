@@ -1,4 +1,4 @@
-.PHONY: deploy run
+.PHONY: deploy run tunnel
 
 srvus: main.go
 	GOOS=linux GOARCH=amd64 go build -o srvus .
@@ -26,3 +26,6 @@ deploy: srvus
 
 run: main.go fullchain.pem privkey.pem ssh_host_rsa_key ssh_host_ecdsa_key ssh_host_ed25519_key
 	go run . -domain srvtest -https-chain-path fullchain.pem -https-key-path privkey.pem -ssh-host-keys-path . -https-port 4443 -ssh-port 2222
+
+tunnel:
+	ssh localhost -o StrictHostKeyChecking=accept-new -p 2222 -R 1:localhost:3000
