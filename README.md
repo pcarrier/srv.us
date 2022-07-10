@@ -55,6 +55,9 @@ For example:
 - For `pcarrier` on GitHub, service 1 is also exposed as https://pcarrier.gh.srv.us/, and service 2 as https://pcarrier--2.gh.srv.us/;
 - For `pcarrier` on GitLab, service 1 is also exposed as https://pcarrier-1.gl.srv.us/, and service 2 as https://pcarrier-2.gl.srv.us/.
 
+The discrepancy is due to the limited rules on GitLab usernames: we need to prevent collisions between users `pcarrier` and `pcarrier-2`,
+whereas GitHub does not allow repeating `-` in usernames.
+
 Note that this feature is optional and might not work out of the box:
 - If your local username does not match your GitHub/GitLab login, use `ssh your-git-login@srv.us …`.
 - Conversely, if they do match but you do not want to use this feature, use `ssh nomatch@srv.us …`.
