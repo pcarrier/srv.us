@@ -249,6 +249,9 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 			name = i.ServerName
 			return nil, nil
 		},
+		NextProtos: []string{
+			"http/1.1",
+		},
 	}
 
 	https := tls.Server(raw, c)
