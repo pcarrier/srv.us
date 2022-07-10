@@ -8,7 +8,7 @@ Yet another solution to **expose any HTTP server to the Internet through a tunne
 
 **Free & open source. Stable URLs. No accounts. Nothing to install outside [Windows](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse). Your data is your data.**
 
-Got a server running on port 3000? Run `ssh srv.us -R 1:localhost:3000` and it'll respond with its public HTTPS URL, available until you close `ssh` with Ctrl-c or Ctrl-d, or get disconnected (see [Staying up](#staying-up)).
+Got a server running on port 3000? Run `ssh srv.us -R 1:localhost:3000` and it'll respond with its public HTTPS URL(s), available until you close `ssh` with Ctrl-c or Ctrl-d, or get disconnected (see [Staying up](#staying-up)).
 
 It fails with `Permission denied (publickey).`? You need an SSH key; use `ssh-keygen -t ed25519`. Another problem? [Contact support](https://discord.gg/6YnHXskF4a).
 
@@ -19,8 +19,8 @@ Set up 2 tunnels, the first to `localhost` port `3000` and the second to `192.16
 ```
 $ ssh srv.us -R 1:localhost:3000 -R 2:192.168.0.1:80
 Support: https://discord.gg/6YnHXskF4a
-1: https://qp556ma755ktlag5b2xyt334ae.srv.us/
-2: https://z2tdoto6u3mddntra45qkm45ci.srv.us/
+1: https://qp556ma755ktlag5b2xyt334ae.srv.us/, https://pcarrier.gh.srv.us/
+2: https://z2tdoto6u3mddntra45qkm45ci.srv.us/, https://pcarrier--2.gh.srv.us/
 ```
 
 Test the first tunnel with a single-request server:
@@ -46,6 +46,16 @@ URLs are stable for a given SSH key and number (1 and 2 in examples), with no ri
 ### Load balancing
 
 When there are multiple tunnels for a URL, client connections are spread between them randomly. We do not perform any health checks.
+
+### GitHub subdomain
+
+Your SSH username is looked up on GitHub; if the GitHub account authorizes your SSH key, we add named domains.
+
+For example, for `pcarrier`, service number 1 is exposed as https://pcarrier.gh.srv.us/
+and service number 2 as https://pcarrier--2.gh.srv.us/.
+
+- If your local username does not match your GitHub username, use `ssh your-github-username@srv.us …`.
+- Similarly, if they do match but you do not want to use this feature, use `ssh nomatch@srv.us …`.
 
 ### Privacy
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/base32"
@@ -15,6 +16,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,12 +27,13 @@ import (
 var (
 	b32encoder = base32.NewEncoding("abcdefghijklmnopqrstuvwxyz234567").WithPadding(base64.NoPadding)
 
-	domain          = flag.String("domain", "srv.us", "Domain name under which we run")
-	sshPort         = flag.Int("ssh-port", 22, "Port for SSH to bind to")
-	httpsPort       = flag.Int("https-port", 443, "Port for SSH to bind to")
-	httpsChainPath  = flag.String("https-chain-path", "/etc/letsencrypt/live/srv.us/fullchain.pem", "Path to the certificate chain")
-	httpsKeyPath    = flag.String("https-key-path", "/etc/letsencrypt/live/srv.us/privkey.pem", "Path to the private key")
-	sshHostKeysPath = flag.String("ssh-host-keys-path", "/etc/ssh", "Path where ssh_host_ecdsa_key, ssh_host_ed25519_key, ssh_host_rsa_key can be found")
+	domain           = flag.String("domain", "srv.us", "Domain name under which we run")
+	sshPort          = flag.Int("ssh-port", 22, "Port for SSH to bind to")
+	httpsPort        = flag.Int("https-port", 443, "Port for SSH to bind to")
+	httpsChainPath   = flag.String("https-chain-path", "/etc/letsencrypt/live/srv.us/fullchain.pem", "Path to the certificate chain")
+	httpsKeyPath     = flag.String("https-key-path", "/etc/letsencrypt/live/srv.us/privkey.pem", "Path to the private key")
+	sshHostKeysPath  = flag.String("ssh-host-keys-path", "/etc/ssh", "Path where ssh_host_ecdsa_key, ssh_host_ed25519_key, ssh_host_rsa_key can be found")
+	githubSubdomains = flag.Bool("github-subdomains", true, "Whether $username.gh subdomains are added")
 )
 
 type remoteForwardRequest struct {
@@ -110,9 +113,6 @@ func (s *server) newPort(conn *ssh.ServerConn) uint16 {
 // A lock is required
 func (s *server) insertEndpointTarget(endpoint string, t *target) {
 	log.Printf("%s(%s) on %s", t.Remote.RemoteAddr(), t.KeyID, endpoint)
-
-	s.Lock()
-	defer s.Unlock()
 
 	if s.tunnels[endpoint] != nil {
 		s.tunnels[endpoint][t] = v
@@ -269,9 +269,7 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 		return
 	}
 
-	requestedEndpoint := strings.TrimSuffix(name, "."+*domain)
-
-	tgt := s.pickTarget(requestedEndpoint)
+	tgt := s.pickTarget(name)
 	if tgt == nil {
 		_ = httpErrorOut(https, "503 Service Unavailable", "No tunnel available.")
 		return
@@ -291,7 +289,7 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 
 	defer func() {
 		if err := sshChannel.Close(); err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("%v:%s→%v channel close failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
+			log.Printf("%v:%s→%v channel close failed (%d)", tgt.Remote.RemoteAddr(), name, raw.RemoteAddr(), err)
 		}
 	}()
 
@@ -308,24 +306,24 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 
 	go func() {
 		b, err := io.Copy(https, sshChannel)
-		log.Printf("%v:%s→%v xfer %d", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), b)
+		log.Printf("%v:%s→%v xfer %d", tgt.Remote.RemoteAddr(), name, raw.RemoteAddr(), b)
 		if err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("%v:%s→%v copy failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
+			log.Printf("%v:%s→%v copy failed (%d)", tgt.Remote.RemoteAddr(), name, raw.RemoteAddr(), err)
 		}
 		if err := https.CloseWrite(); err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("%v:%s→%v close failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
+			log.Printf("%v:%s→%v close failed (%d)", tgt.Remote.RemoteAddr(), name, raw.RemoteAddr(), err)
 		}
 		wg.Done()
 	}()
 
 	go func() {
 		b, err := io.Copy(sshChannel, https)
-		log.Printf("%v:%s←%v xfer %d", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), b)
+		log.Printf("%v:%s←%v xfer %d", tgt.Remote.RemoteAddr(), name, raw.RemoteAddr(), b)
 		if err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("%v:%s←%v copy failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
+			log.Printf("%v:%s←%v copy failed (%d)", tgt.Remote.RemoteAddr(), name, raw.RemoteAddr(), err)
 		}
 		if err := sshChannel.CloseWrite(); err != nil && !errors.Is(err, io.EOF) {
-			log.Printf("%v:%s←%v close failed (%d)", tgt.Remote.RemoteAddr(), requestedEndpoint, raw.RemoteAddr(), err)
+			log.Printf("%v:%s←%v close failed (%d)", tgt.Remote.RemoteAddr(), name, raw.RemoteAddr(), err)
 		}
 		wg.Done()
 	}()
@@ -373,7 +371,13 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 	}
 
 	keyID := base64.RawStdEncoding.EncodeToString(key.Marshal()[:])
-	log.Printf("%s(%s) connected (%s, %s)", conn.RemoteAddr(), keyID, conn.ClientVersion(), conn.User())
+
+	githubEnabled := false
+	if *githubSubdomains && conn.User() != "nomatch" {
+		githubEnabled = githubMatches(keyID, conn.User())
+	}
+
+	log.Printf("%s(%s) connected (%s, %s, %v)", conn.RemoteAddr(), keyID, conn.ClientVersion(), conn.User(), githubEnabled)
 
 	// We want to have at least one session opened so we can send messages to it.
 	outputReady := false
@@ -477,16 +481,25 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 					}
 				}
 			} else {
-				endpoint := endpointURL(key, payload.BindPort)
+				endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled)
 				atomic.AddInt32(&requested, 1)
-				msgs <- fmt.Sprintf("%d: https://%s.%s/", payload.BindPort, endpoint, *domain)
 
-				s.insertEndpointTarget(endpoint, &target{
-					KeyID:  keyID,
-					Remote: conn,
-					Host:   payload.BindAddr,
-					Port:   payload.BindPort,
-				})
+				var urls []string
+				for _, endpoint := range endpoints {
+					urls = append(urls, "https://"+endpoint+"/")
+				}
+				msgs <- fmt.Sprintf("%d: %s", payload.BindPort, strings.Join(urls, ", "))
+
+				s.Lock()
+				for _, endpoint := range endpoints {
+					s.insertEndpointTarget(endpoint, &target{
+						KeyID:  keyID,
+						Remote: conn,
+						Host:   payload.BindAddr,
+						Port:   payload.BindPort,
+					})
+				}
+				s.Unlock()
 
 				if req.WantReply {
 					if err := req.Reply(true, ssh.Marshal(struct{ uint32 }{443})); err != nil {
@@ -504,17 +517,18 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 					}
 				}
 			} else {
-				connID := endpointURL(key, payload.BindPort)
+				endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled)
 				atomic.AddInt32(&requested, 1)
-				msgs <- fmt.Sprintf("https://%s.%s/ stops serving %s:%d", connID, *domain, payload.BindAddr, payload.BindPort)
 
 				s.Lock()
-				s.removeEndpointTarget(connID, &target{
-					KeyID:  keyID,
-					Remote: conn,
-					Host:   payload.BindAddr,
-					Port:   payload.BindPort,
-				})
+				for _, endpoint := range endpoints {
+					s.removeEndpointTarget(endpoint, &target{
+						KeyID:  keyID,
+						Remote: conn,
+						Host:   payload.BindAddr,
+						Port:   payload.BindPort,
+					})
+				}
 				s.Unlock()
 
 				if req.WantReply {
@@ -539,6 +553,34 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 	}
 }
 
+func githubMatches(keyID string, user string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://github.com/%s.keys", user), nil)
+	if err != nil {
+		log.Printf("Error querying GitHub for %s (%v)", user, err)
+		return false
+	}
+	if err != nil {
+		log.Printf("Error reading response from GitHub for %s (%v)", user, err)
+		return false
+	}
+	response, err := http.DefaultClient.Do(req)
+	body, err := ioutil.ReadAll(response.Body)
+	lines := strings.Split(string(body), "\n")
+	for _, line := range lines {
+		parts := strings.Split(line, " ")
+		if len(parts) < 2 {
+			continue
+		}
+		if parts[1] == keyID {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *server) logStats() {
 	t := time.NewTicker(time.Minute)
 	for range t.C {
@@ -546,12 +588,21 @@ func (s *server) logStats() {
 	}
 }
 
-func endpointURL(key ssh.PublicKey, port uint32) string {
+func endpointURLs(user string, key ssh.PublicKey, port uint32, githubEnabled bool) []string {
 	hasher := sha256.New()
 	_, _ = hasher.Write(key.Marshal())
 	_, _ = hasher.Write([]byte{0})
 	_, _ = hasher.Write([]byte(strconv.Itoa(int(port))))
-	return b32encoder.EncodeToString(hasher.Sum(nil)[:16])
+	b32 := b32encoder.EncodeToString(hasher.Sum(nil)[:16])
+	result := []string{fmt.Sprintf("%s.%s", b32, *domain)}
+	if githubEnabled {
+		if port == 1 {
+			result = append(result, fmt.Sprintf("%s.gh.%s", user, *domain))
+		} else {
+			result = append(result, fmt.Sprintf("%s--%d.gh.%s", user, port, *domain))
+		}
+	}
+	return result
 }
 
 func reportStatus(ch ssh.Channel, status byte) {
