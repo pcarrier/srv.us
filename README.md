@@ -6,7 +6,7 @@
 
 Yet another solution to **expose any HTTP server to the Internet through a tunnel**.
 
-**Free & open source. Stable URLs. No accounts. Nothing to install outside [Windows](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse). Your data is your data.**
+**Free & [open source](https://github.com/pcarrier/srv.us). Stable URLs. No accounts. Nothing to install outside [Windows](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse). Your data is your data.**
 
 Got a server running on port 3000? Run `ssh srv.us -R 1:localhost:3000` and it'll respond with its public HTTPS URL(s), available until you close `ssh` with Ctrl-c or Ctrl-d, or get disconnected (see [Staying up](#staying-up)).
 
@@ -41,7 +41,8 @@ URLs are stable for a given SSH key and number (1 and 2 in examples), with no ri
 
 `ssh` will terminate when the connection is lost or the service restarted.
 - To reconnect automatically in your shell, use `until ssh srv.us -R 1:localhost:3000; do echo Restarting…; done`.
-- To use as a service on Linux that reconnects automatically, see [systemd-example](systemd-example/).
+- To use as a service on Linux that reconnects automatically, see [systemd service](systemd.md).
+- To use as a launch agent on MacOS that reconnects automatically, see [launchd launch agent](launchd.md).
 
 ### Load balancing
 
@@ -49,17 +50,18 @@ When there are multiple tunnels for a URL, client connections are spread between
 
 ### GitHub & GitLab subdomains
 
-We look up GitHub and GitLab; if the corresponding service authorizes your SSH key for your login, we also expose your services over named URLs.
+We look up SSH keys in GitHub and GitLab; if either service authorizes your SSH key for your login, we also expose your services over correspondingly named URLs.
 
-For example:
-- For `pcarrier` on GitHub, service 1 is also exposed as https://pcarrier.gh.srv.us/, and service 2 as https://pcarrier--2.gh.srv.us/;
-- For `pcarrier` on GitLab, service 1 is also exposed as https://pcarrier-1.gl.srv.us/, and service 2 as https://pcarrier-2.gl.srv.us/.
+For example, for login `jdoe`:
+- On GitHub, service 1 is also [jdoe.gh.srv.us](https://jdoe.gh.srv.us/), service 2 [jdoe--2.gh.srv.us](https://jdoe--2.gh.srv.us/);
+- On GitLab, service 1 is also [jdoe-1.gl.srv.us](https://jdoe-1.gl.srv.us/), service 2 [jdoe-2.gl.srv.us](https://jdoe-2.gl.srv.us/).
 
-The discrepancy is due to the limited rules on GitLab usernames: we need to prevent collisions between users `pcarrier` and `pcarrier-2`,
-whereas GitHub does not allow repeating `-` in usernames.
+*(The discrepancy is due to insufficient constraints on GitLab usernames.
+We need to prevent collisions between users `pcarrier` and eg `pcarrier--2`,
+whereas GitHub does not allow repeating `-` in usernames.)*
 
 Note that this feature is optional and might not work out of the box:
-- If your local username does not match your GitHub/GitLab login, use `ssh your-git-login@srv.us …`.
+- If your local username does not match your GitHub/GitLab login, use `ssh your-git-login@srv.us …`;
 - Conversely, if they do match but you do not want to use this feature, use `ssh nomatch@srv.us …`.
 
 ### Privacy

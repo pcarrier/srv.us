@@ -266,7 +266,7 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 	}
 
 	if name == *domain {
-		_, _ = https.Write([]byte("HTTP/1.1 307 Temporary Redirect\r\nLocation: https://github.com/pcarrier/srv.us/blob/main/README.md\r\n\r\n"))
+		_, _ = https.Write([]byte("HTTP/1.1 307 Temporary Redirect\r\nLocation: https://docs.srv.us\r\n\r\n"))
 		return
 	}
 
