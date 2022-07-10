@@ -23,7 +23,7 @@ ssh-keygen -t ed25519 -N '' -f ~/.ssh/srvus
     <array>
         <string>/bin/sh</string>
         <string>-c</string>
-        <string>exec ssh srv.us -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i ~/.ssh/srvus -T -R 1:localhost:3000 -R 2:192.168.0.1:80</string>
+        <string>exec ssh srv.us -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 -i ~/.ssh/srvus -T -R 1:localhost:3000 -R 2:192.168.0.1:80</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
