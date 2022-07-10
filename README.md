@@ -28,7 +28,7 @@ Hello!
 
 ## Notes
 
-If you forget the syntax, `ssh srv.us` to get an example.
+If you forget the syntax, `ssh srv.us` prints an example.
 
 URLs are stable for a given SSH key and number (1 and 2 in examples), with no risk of collision (the domain containing the first 128 bits of their SHA-256).
 
