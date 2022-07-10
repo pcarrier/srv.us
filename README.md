@@ -30,7 +30,7 @@ Hello!
 
 If you forget the syntax, `ssh srv.us` prints an example.
 
-URLs are stable for a given SSH key and number (1 and 2 in examples), with no risk of collision (the domain containing the first 128 bits of their SHA-256).
+URLs are stable for a given SSH key and number (1 and 2 in examples), with no risk of collision, the subdomain being the first 128 bits of their SHA-256 in base32.
 
 When there are multiple tunnels for a URL, client connections are spread between them randomly.
 
