@@ -49,12 +49,13 @@ When there are multiple tunnels for a URL, client connections are spread between
 
 ### GitHub & GitLab subdomains
 
-Your SSH username is looked up on GitHub and GitLab; if the corresponding account authorizes your SSH key,
-we expose your services over named URLs.
+We look up GitHub and GitLab; if the corresponding service authorizes your SSH key for your login, we also expose your services over named URLs.
 
-For example, for `pcarrier` on GitHub, service number 1 is also exposed as https://pcarrier.gh.srv.us/
-and service number 2 as https://pcarrier--2.gh.srv.us/.
+For example:
+- For `pcarrier` on GitHub, service 1 is also exposed as https://pcarrier.gh.srv.us/, and service 2 as https://pcarrier--2.gh.srv.us/;
+- For `pcarrier` on GitLab, service 1 is also exposed as https://pcarrier-1.gl.srv.us/, and service 2 as https://pcarrier-2.gl.srv.us/.
 
+Note that this feature is optional and might not work out of the box:
 - If your local username does not match your GitHub/GitLab login, use `ssh your-git-login@srv.us …`.
 - Conversely, if they do match but you do not want to use this feature, use `ssh nomatch@srv.us …`.
 
