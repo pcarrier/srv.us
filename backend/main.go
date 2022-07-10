@@ -7,6 +7,7 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"errors"
+	"flag"
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -21,13 +22,15 @@ import (
 	"time"
 )
 
-const (
-	port   = 22
-	domain = "srv.us"
-)
-
 var (
 	b32encoder = base32.NewEncoding("abcdefghijklmnopqrstuvwxyz234567").WithPadding(base64.NoPadding)
+
+	domain          = flag.String("domain", "srv.us", "Domain name under which we run")
+	sshPort         = flag.Int("ssh-port", 22, "Port for SSH to bind to")
+	httpsPort       = flag.Int("https-port", 443, "Port for SSH to bind to")
+	httpsChainPath  = flag.String("https-chain-path", "/etc/letsencrypt/live/srv.us/fullchain.pem", "Path to the certificate chain")
+	httpsKeyPath    = flag.String("https-key-path", "/etc/letsencrypt/live/srv.us/privkey.pem", "Path to the private key")
+	sshHostKeysPath = flag.String("ssh-host-keys-path", "/etc/ssh", "Path where ssh_host_ecdsa_key, ssh_host_ed25519_key, ssh_host_rsa_key can be found")
 )
 
 type remoteForwardRequest struct {
@@ -209,12 +212,12 @@ func (s *server) closeConnection(conn *ssh.ServerConn) {
 }
 
 func (s *server) serveHTTPS() {
-	cert, err := tls.LoadX509KeyPair("/etc/letsencrypt/live/srv.us/fullchain.pem", "/etc/letsencrypt/live/srv.us/privkey.pem")
+	cert, err := tls.LoadX509KeyPair(*httpsChainPath, *httpsKeyPath)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	listener, err := net.Listen("tcp", ":443")
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(*httpsPort))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -278,7 +281,7 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 	sshChannel, reqs, err := tgt.Remote.OpenChannel("forwarded-tcpip", ssh.Marshal(&remoteForwardChannelData{
 		DestAddr:   tgt.Host,
 		DestPort:   tgt.Port,
-		OriginAddr: domain,
+		OriginAddr: *domain,
 		OriginPort: uint32(s.newPort(tgt.Remote)),
 	}))
 
@@ -337,14 +340,14 @@ func httpErrorOut(w io.Writer, status string, message string) error {
 }
 
 func (s *server) serveSSH() {
-	sshConfig := ssh.ServerConfig{ServerVersion: "SSH-2.0-" + domain + "-1.0"}
-	addKey(&sshConfig, "/etc/ssh/ssh_host_ecdsa_key")
-	addKey(&sshConfig, "/etc/ssh/ssh_host_ed25519_key")
-	addKey(&sshConfig, "/etc/ssh/ssh_host_rsa_key")
+	sshConfig := ssh.ServerConfig{ServerVersion: "SSH-2.0-" + *domain + "-1.0"}
+	addKey(&sshConfig, *sshHostKeysPath+"/ssh_host_ecdsa_key")
+	addKey(&sshConfig, *sshHostKeysPath+"/ssh_host_ed25519_key")
+	addKey(&sshConfig, *sshHostKeysPath+"/ssh_host_rsa_key")
 
-	listener, err := net.Listen("tcp", "0.0.0.0:"+strconv.Itoa(port))
+	listener, err := net.Listen("tcp", "0.0.0.0:"+strconv.Itoa(*sshPort))
 	if err != nil {
-		log.Fatalf("Failed to listen on port %d (%s)", port, err)
+		log.Fatalf("Failed to listen on port %d (%s)", *sshPort, err)
 	}
 
 	for {
@@ -477,7 +480,7 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 			} else {
 				endpoint := endpointURL(key, payload.BindPort)
 				atomic.AddInt32(&requested, 1)
-				msgs <- fmt.Sprintf("%d: https://%s.%s/", payload.BindPort, endpoint, domain)
+				msgs <- fmt.Sprintf("%d: https://%s.%s/", payload.BindPort, endpoint, *domain)
 
 				s.insertEndpointTarget(endpoint, &target{
 					KeyID:  keyID,
@@ -504,7 +507,7 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 			} else {
 				connID := endpointURL(key, payload.BindPort)
 				atomic.AddInt32(&requested, 1)
-				msgs <- fmt.Sprintf("https://%s.%s/ stops serving %s:%d", connID, domain, payload.BindAddr, payload.BindPort)
+				msgs <- fmt.Sprintf("https://%s.%s/ stops serving %s:%d", connID, *domain, payload.BindAddr, payload.BindPort)
 
 				s.Lock()
 				s.removeEndpointTarget(connID, &target{
@@ -557,7 +560,7 @@ func reportStatus(ch ssh.Channel, status byte) {
 }
 
 func failWithUsage(ch ssh.Channel) {
-	_, _ = ch.Write([]byte("Usage: ssh " + domain + " -R 1:localhost:3000 -R 2:192.168.0.1:80 …\r\n"))
+	_, _ = ch.Write([]byte("Usage: ssh " + *domain + " -R 1:localhost:3000 -R 2:192.168.0.1:80 …\r\n"))
 	reportStatus(ch, 1)
 	_ = ch.Close()
 }
@@ -577,6 +580,8 @@ func addKey(sshConfig *ssh.ServerConfig, path string) {
 }
 
 func main() {
+	flag.Parse()
+
 	s := newServer()
 	go s.logStats()
 	go s.serveHTTPS()

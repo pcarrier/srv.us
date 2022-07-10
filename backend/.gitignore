@@ -1,3 +1,4 @@
 *.pem
 /.idea
 /srvus
+/ssh_host_*
