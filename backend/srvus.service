@@ -1,6 +1,3 @@
-[Unit]
-After=network.target
-
 [Service]
 ExecStart=/usr/local/bin/srvus
 ReadOnlyDirectories=/
@@ -9,3 +6,6 @@ NoNewPrivileges=true
 
 [Install]
 WantedBy=multi-user.target
+
+[Unit]
+After=network.target

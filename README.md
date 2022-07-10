@@ -39,7 +39,7 @@ URLs are stable for a given SSH key and number (1 and 2 in examples), with no ri
 
 ### Staying up
 
-`ssh` will terminate when the connection is lost or the service restarted.
+`ssh` eventually terminates when the connection is lost or the service restarted.
 - To reconnect automatically in your shell, use `until ssh srv.us -R 1:localhost:3000; do echo Restarting…; done`.
 - To use as a service on Linux that reconnects automatically, see [systemd service](systemd.md).
 - To use as a launch agent on MacOS that reconnects automatically, see [launchd launch agent](launchd.md).

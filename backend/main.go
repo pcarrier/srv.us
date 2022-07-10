@@ -388,12 +388,25 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 	// We want to have at least one session opened so we can send messages to it.
 	outputReady := false
 	outputReadyCh := make(chan void)
+	keepalives := make(chan void)
 	msgs := make(chan string)
 	requested := int32(0)
 
 	defer func() {
 		close(msgs)
 		s.closeConnection(conn)
+	}()
+
+	go func() {
+		t := time.NewTicker(5 * time.Second)
+		for range t.C {
+			if _, _, err := conn.SendRequest("keepalive@openssh.com", true, nil); err != nil {
+				close(keepalives)
+				return
+			} else {
+				keepalives <- v
+			}
+		}
 	}()
 
 	go func() {
@@ -475,86 +488,96 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 		}
 	}()
 
-	for req := range reqs {
-		switch req.Type {
-		case "tcpip-forward":
-			var payload remoteForwardRequest
-			if err = ssh.Unmarshal(req.Payload, &payload); err != nil {
-				log.Printf("Invalid new tcpip-forward request (%v)", err)
-				if req.WantReply {
-					if err := req.Reply(false, nil); err != nil {
-						log.Printf("Could not reject new channel request of type %s (%v)", req.Type, err)
-					}
-				}
-			} else {
-				endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled, gitlabEnabled)
-				atomic.AddInt32(&requested, 1)
-
-				var urls []string
-				for _, endpoint := range endpoints {
-					urls = append(urls, "https://"+endpoint+"/")
-				}
-				msgs <- fmt.Sprintf("%d: %s", payload.BindPort, strings.Join(urls, ", "))
-
-				s.Lock()
-				for _, endpoint := range endpoints {
-					s.insertEndpointTarget(endpoint, &target{
-						KeyID:  keyID,
-						Remote: conn,
-						Host:   payload.BindAddr,
-						Port:   payload.BindPort,
-					})
-				}
-				s.Unlock()
-
-				if req.WantReply {
-					if err := req.Reply(true, ssh.Marshal(struct{ uint32 }{443})); err != nil {
-						log.Printf("Could not accept new channel request of type %s (%v)", req.Type, err)
-					}
-				}
+	for {
+		select {
+		case req := <-reqs:
+			if req == nil {
+				return
 			}
-		case "cancel-tcpip-forward":
-			var payload remoteForwardCancelRequest
-			if err = ssh.Unmarshal(req.Payload, &payload); err != nil {
-				log.Printf("Invalid new tcpip-forward request (%v)", err)
-				if req.WantReply {
-					if err := req.Reply(false, nil); err != nil {
-						log.Printf("Could not reject new channel request of type %s (%v)", req.Type, err)
+			switch req.Type {
+			case "tcpip-forward":
+				var payload remoteForwardRequest
+				if err = ssh.Unmarshal(req.Payload, &payload); err != nil {
+					log.Printf("Invalid new tcpip-forward request (%v)", err)
+					if req.WantReply {
+						if err := req.Reply(false, nil); err != nil {
+							log.Printf("Could not reject new channel request of type %s (%v)", req.Type, err)
+						}
 					}
-				}
-			} else {
-				endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled, gitlabEnabled)
-				atomic.AddInt32(&requested, 1)
-
-				s.Lock()
-				for _, endpoint := range endpoints {
-					s.removeEndpointTarget(endpoint, &target{
-						KeyID:  keyID,
-						Remote: conn,
-						Host:   payload.BindAddr,
-						Port:   payload.BindPort,
-					})
-				}
-				s.Unlock()
-
-				if req.WantReply {
-					if err := req.Reply(true, ssh.Marshal(struct{ uint32 }{443})); err != nil {
-						log.Printf("Could not accept new channel request of type %s (%v)", req.Type, err)
-					}
-				}
-			}
-		case "keepalive@openssh.com":
-			if req.WantReply {
-				_ = req.Reply(true, nil)
-			}
-		default:
-			if req.WantReply {
-				if err := req.Reply(false, nil); err != nil {
-					log.Printf("Failed to reply to %v (%v)", req, err)
 				} else {
-					log.Printf("Rejected request of type %v", req.Type)
+					endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled, gitlabEnabled)
+					atomic.AddInt32(&requested, 1)
+
+					var urls []string
+					for _, endpoint := range endpoints {
+						urls = append(urls, "https://"+endpoint+"/")
+					}
+					msgs <- fmt.Sprintf("%d: %s", payload.BindPort, strings.Join(urls, ", "))
+
+					s.Lock()
+					for _, endpoint := range endpoints {
+						s.insertEndpointTarget(endpoint, &target{
+							KeyID:  keyID,
+							Remote: conn,
+							Host:   payload.BindAddr,
+							Port:   payload.BindPort,
+						})
+					}
+					s.Unlock()
+
+					if req.WantReply {
+						if err := req.Reply(true, ssh.Marshal(struct{ uint32 }{443})); err != nil {
+							log.Printf("Could not accept new channel request of type %s (%v)", req.Type, err)
+						}
+					}
+				}
+			case "cancel-tcpip-forward":
+				var payload remoteForwardCancelRequest
+				if err = ssh.Unmarshal(req.Payload, &payload); err != nil {
+					log.Printf("Invalid new tcpip-forward request (%v)", err)
+					if req.WantReply {
+						if err := req.Reply(false, nil); err != nil {
+							log.Printf("Could not reject new channel request of type %s (%v)", req.Type, err)
+						}
+					}
+				} else {
+					endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled, gitlabEnabled)
+					atomic.AddInt32(&requested, 1)
+
+					s.Lock()
+					for _, endpoint := range endpoints {
+						s.removeEndpointTarget(endpoint, &target{
+							KeyID:  keyID,
+							Remote: conn,
+							Host:   payload.BindAddr,
+							Port:   payload.BindPort,
+						})
+					}
+					s.Unlock()
+
+					if req.WantReply {
+						if err := req.Reply(true, ssh.Marshal(struct{ uint32 }{443})); err != nil {
+							log.Printf("Could not accept new channel request of type %s (%v)", req.Type, err)
+						}
+					}
+				}
+			case "keepalive@openssh.com":
+				if req.WantReply {
+					_ = req.Reply(true, nil)
+				}
+			default:
+				if req.WantReply {
+					if err := req.Reply(false, nil); err != nil {
+						log.Printf("Failed to reply to %v (%v)", req, err)
+					} else {
+						log.Printf("Rejected request of type %v", req.Type)
+					}
 				}
 			}
+		case <-keepalives:
+		case <-time.After(10 * time.Second):
+			log.Printf("%s(%s) timed out", conn.RemoteAddr(), keyID)
+			return
 		}
 	}
 }
