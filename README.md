@@ -47,15 +47,16 @@ URLs are stable for a given SSH key and number (1 and 2 in examples), with no ri
 
 When there are multiple tunnels for a URL, client connections are spread between them randomly. We do not perform any health checks.
 
-### GitHub subdomain
+### GitHub & GitLab subdomains
 
-Your SSH username is looked up on GitHub; if the GitHub account authorizes your SSH key, we add named domains.
+Your SSH username is looked up on GitHub and GitLab; if the corresponding account authorizes your SSH key,
+we expose your services over named URLs.
 
-For example, for `pcarrier`, service number 1 is exposed as https://pcarrier.gh.srv.us/
+For example, for `pcarrier` on GitHub, service number 1 is also exposed as https://pcarrier.gh.srv.us/
 and service number 2 as https://pcarrier--2.gh.srv.us/.
 
-- If your local username does not match your GitHub username, use `ssh your-github-username@srv.us …`.
-- Similarly, if they do match but you do not want to use this feature, use `ssh nomatch@srv.us …`.
+- If your local username does not match your GitHub/GitLab login, use `ssh your-git-login@srv.us …`.
+- Conversely, if they do match but you do not want to use this feature, use `ssh nomatch@srv.us …`.
 
 ### Privacy
 

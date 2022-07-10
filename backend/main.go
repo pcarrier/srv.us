@@ -33,7 +33,8 @@ var (
 	httpsChainPath   = flag.String("https-chain-path", "/etc/letsencrypt/live/srv.us/fullchain.pem", "Path to the certificate chain")
 	httpsKeyPath     = flag.String("https-key-path", "/etc/letsencrypt/live/srv.us/privkey.pem", "Path to the private key")
 	sshHostKeysPath  = flag.String("ssh-host-keys-path", "/etc/ssh", "Path where ssh_host_ecdsa_key, ssh_host_ed25519_key, ssh_host_rsa_key can be found")
-	githubSubdomains = flag.Bool("github-subdomains", true, "Whether $username.gh subdomains are added")
+	githubSubdomains = flag.Bool("github-subdomains", true, "Whether to expose $username.gh subdomains")
+	gitlabSubdomains = flag.Bool("gitlab-subdomains", true, "Whether to expose $username.gl subdomains")
 )
 
 type remoteForwardRequest struct {
@@ -78,14 +79,14 @@ type sshConnection struct {
 
 type server struct {
 	sync.Mutex
-	conns   map[*ssh.ServerConn]*sshConnection
-	tunnels map[string]map[*target]void
+	conns     map[*ssh.ServerConn]*sshConnection
+	endpoints map[string]map[*target]void
 }
 
 func newServer() *server {
 	return &server{
-		conns:   map[*ssh.ServerConn]*sshConnection{},
-		tunnels: map[string]map[*target]void{},
+		conns:     map[*ssh.ServerConn]*sshConnection{},
+		endpoints: map[string]map[*target]void{},
 	}
 }
 
@@ -114,10 +115,10 @@ func (s *server) newPort(conn *ssh.ServerConn) uint16 {
 func (s *server) insertEndpointTarget(endpoint string, t *target) {
 	log.Printf("%s(%s) on %s", t.Remote.RemoteAddr(), t.KeyID, endpoint)
 
-	if s.tunnels[endpoint] != nil {
-		s.tunnels[endpoint][t] = v
+	if s.endpoints[endpoint] != nil {
+		s.endpoints[endpoint][t] = v
 	} else {
-		s.tunnels[endpoint] = map[*target]void{t: v}
+		s.endpoints[endpoint] = map[*target]void{t: v}
 	}
 	sConn := s.conns[t.Remote]
 	sConn.TunnelRefs[&tunnelRef{
@@ -130,13 +131,13 @@ func (s *server) insertEndpointTarget(endpoint string, t *target) {
 func (s *server) removeEndpointTarget(endpoint string, t *target) {
 	log.Printf("%s(%s) off %s", t.Remote.RemoteAddr(), t.KeyID, endpoint)
 
-	if s.tunnels[endpoint] == nil {
+	if s.endpoints[endpoint] == nil {
 		return
 	}
 
-	delete(s.tunnels[endpoint], t)
-	if len(s.tunnels[endpoint]) == 0 {
-		delete(s.tunnels, endpoint)
+	delete(s.endpoints[endpoint], t)
+	if len(s.endpoints[endpoint]) == 0 {
+		delete(s.endpoints, endpoint)
 	}
 
 	sConn := s.conns[t.Remote]
@@ -148,14 +149,14 @@ func (s *server) removeEndpointTarget(endpoint string, t *target) {
 
 func (s *server) pickTarget(endpoint string) *target {
 	s.Lock()
-	mapping, found := s.tunnels[endpoint]
+	ep, found := s.endpoints[endpoint]
 	s.Unlock()
 
 	if !found {
 		return nil
 	} else {
 		var candidates []*target
-		for c := range mapping {
+		for c := range ep {
 			candidates = append(candidates, c)
 		}
 		return candidates[rand.Intn(len(candidates))]
@@ -374,10 +375,15 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 
 	githubEnabled := false
 	if *githubSubdomains && conn.User() != "nomatch" {
-		githubEnabled = githubMatches(keyID, conn.User())
+		githubEnabled = keyMatchesAccount("github.com", conn.User(), keyID)
+	}
+	gitlabEnabled := false
+	if *gitlabSubdomains && conn.User() != "nomatch" {
+		gitlabEnabled = keyMatchesAccount("gitlab.com", conn.User(), keyID)
 	}
 
-	log.Printf("%s(%s) connected (%s, %s, %v)", conn.RemoteAddr(), keyID, conn.ClientVersion(), conn.User(), githubEnabled)
+	log.Printf("%s(%s) connected (%s, %s, gh:%v, gl:%v)",
+		conn.RemoteAddr(), keyID, conn.ClientVersion(), conn.User(), githubEnabled, gitlabEnabled)
 
 	// We want to have at least one session opened so we can send messages to it.
 	outputReady := false
@@ -481,7 +487,7 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 					}
 				}
 			} else {
-				endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled)
+				endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled, gitlabEnabled)
 				atomic.AddInt32(&requested, 1)
 
 				var urls []string
@@ -517,7 +523,7 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 					}
 				}
 			} else {
-				endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled)
+				endpoints := endpointURLs(conn.User(), key, payload.BindPort, githubEnabled, gitlabEnabled)
 				atomic.AddInt32(&requested, 1)
 
 				s.Lock()
@@ -553,11 +559,11 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 	}
 }
 
-func githubMatches(keyID string, user string) bool {
+func keyMatchesAccount(domain, user, key string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://github.com/%s.keys", user), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://%s/%s.keys", domain, user), nil)
 	if err != nil {
 		log.Printf("Error querying GitHub for %s (%v)", user, err)
 		return false
@@ -570,11 +576,11 @@ func githubMatches(keyID string, user string) bool {
 	body, err := ioutil.ReadAll(response.Body)
 	lines := strings.Split(string(body), "\n")
 	for _, line := range lines {
-		parts := strings.Split(line, " ")
+		parts := strings.SplitN(line, " ", 3)
 		if len(parts) < 2 {
 			continue
 		}
-		if parts[1] == keyID {
+		if parts[1] == key {
 			return true
 		}
 	}
@@ -584,11 +590,11 @@ func githubMatches(keyID string, user string) bool {
 func (s *server) logStats() {
 	t := time.NewTicker(time.Minute)
 	for range t.C {
-		log.Printf("Stats: %d conns, %d tunnels", len(s.conns), len(s.tunnels))
+		log.Printf("Stats: %d conns, %d endpoints", len(s.conns), len(s.endpoints))
 	}
 }
 
-func endpointURLs(user string, key ssh.PublicKey, port uint32, githubEnabled bool) []string {
+func endpointURLs(user string, key ssh.PublicKey, port uint32, githubEnabled bool, gitlabEnabled bool) []string {
 	hasher := sha256.New()
 	_, _ = hasher.Write(key.Marshal())
 	_, _ = hasher.Write([]byte{0})
@@ -601,6 +607,9 @@ func endpointURLs(user string, key ssh.PublicKey, port uint32, githubEnabled boo
 		} else {
 			result = append(result, fmt.Sprintf("%s--%d.gh.%s", user, port, *domain))
 		}
+	}
+	if gitlabEnabled {
+		result = append(result, fmt.Sprintf("%s-%d.gl.%s", user, port, *domain))
 	}
 	return result
 }
