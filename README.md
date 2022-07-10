@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/pcarrier/srv.us/main/assets/icon.webp" width="128" height="128" alt="Logo"/>
+</p>
+
 # `ssh srv.us`: expose local HTTP services online
 
 Yet another solution to **expose any HTTP server to the Internet through a tunnel**.
@@ -46,6 +50,6 @@ We reserve the right to access your endpoint in the handling of abuse reports.
 
 Like any tunnel, the bandwidth of your service is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover hosting costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
 
-There are [a lot of alternatives](https://github.com/anderspitman/awesome-tunneling). As with [ident.me](https://api.ident.me), I hope you enjoy this simple take on a common problem.
+There are [a lot of alternatives](https://github.com/anderspitman/awesome-tunneling). As with [ident.me](https://api.ident.me), I hope you enjoy this simple take on a common problem. ❤️
 
 That's it.
