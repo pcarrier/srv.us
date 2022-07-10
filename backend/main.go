@@ -269,11 +269,7 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 		return
 	}
 
-	dotPos := strings.IndexByte(name, '.')
-	if dotPos < 0 {
-		dotPos = 0
-	}
-	requestedEndpoint := name[:dotPos]
+	requestedEndpoint := strings.TrimSuffix(name, "."+*domain)
 
 	tgt := s.pickTarget(requestedEndpoint)
 	if tgt == nil {
