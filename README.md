@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/pcarrier/srv.us/main/assets/icon.webp" width="128" height="128" alt="Logo"/>
+  <img src="assets/icon.webp" width="128" height="128" alt="Logo"/>
 </p>
 
 <h1 align="center"><tt>ssh srv.us</tt>:<br/>expose local HTTP services online</h1>
@@ -57,7 +57,7 @@ For example, for login `jdoe`:
 - On GitLab, service 1 is also [jdoe-1.gl.srv.us](https://jdoe-1.gl.srv.us/), service 2 [jdoe-2.gl.srv.us](https://jdoe-2.gl.srv.us/).
 
 *(The discrepancy is due to insufficient constraints on GitLab usernames.
-We need to prevent collisions between users `pcarrier` and eg `pcarrier--2`,
+We need to prevent collisions between users `jdoe` and eg `jdoe--2`,
 whereas GitHub does not allow repeating `-` in usernames.)*
 
 Note that this feature is optional and might not work out of the box:
