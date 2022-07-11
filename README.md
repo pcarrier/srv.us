@@ -35,7 +35,7 @@ Hello through srv.us!
 
 If you forget the syntax, `ssh srv.us` prints an example.
 
-URLs are stable for a given SSH key and number (1 and 2 in examples), with no risk of collision, the assigned subdomain being the first 16 bytes of their SHA-256 in base32.
+URLs outside [the GitHub and GitLab subdomains](#github--gitlab-subdomains) are derived from the SSH key and number (1 and 2 in examples).
 
 ### Staying up
 
