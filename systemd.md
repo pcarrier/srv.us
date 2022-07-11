@@ -39,7 +39,7 @@ $ sudo systemctl enable --now srvus
 Read logs with:
 
 ```
-$ sudo journalctl -fun 100 srvus
+$ sudo journalctl -fn 100 -u srvus
 ```
 
 ## Making changes
