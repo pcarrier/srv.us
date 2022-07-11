@@ -4,7 +4,7 @@
 
 <h1 align="center"><tt>ssh srv.us</tt>:<br/>expose local HTTP services online</h1>
 
-Yet another solution to **expose any HTTP server to the Internet through a tunnel**.
+Yet another solution to **expose any HTTP server to the Internet through a tunnel**. In many situations, [tailscale](https://tailscale.com/) or forwarding ports on your NAT box and [Let's Encrypt](https://letsencrypt.org/) are better options.
 
 **Free & [open source](https://github.com/pcarrier/srv.us). Stable URLs. No accounts. Nothing to install outside [Windows](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse). Your data is your data.**
 
