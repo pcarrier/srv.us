@@ -418,8 +418,8 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 					err := newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 					if err != nil {
 						log.Printf("Failed to reject channel type %s (%s)", t, err)
-						return
 					}
+					return
 				}
 
 				channel, sessionReqs, err := newChannel.Accept()
