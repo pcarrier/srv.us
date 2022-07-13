@@ -6,11 +6,13 @@
 
 Yet another solution to **expose any HTTP server to the Internet through a tunnel**. In many situations, [tailscale](https://tailscale.com/) or forwarding ports on your NAT box and [Let's Encrypt](https://letsencrypt.org/) are better options.
 
-**Free & [open source](https://github.com/pcarrier/srv.us). Stable URLs. No accounts. Nothing to install outside [Windows](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse). Your data is your data.**
+**Free & [open source](https://github.com/pcarrier/srv.us). Stable URLs from your SSH key. No accounts. Nothing to install outside [Windows](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse). Your data is your data.**
 
 Got a server running on port 3000? Run `ssh srv.us -R 1:localhost:3000` and it'll respond with its public HTTPS URL(s), available until you close `ssh` with Ctrl-c or Ctrl-d, or get disconnected (see [Staying up](#staying-up)).
 
 It fails with `Permission denied (publickey).`? You need an SSH key; use `ssh-keygen -t ed25519`. Another problem? [Contact support](https://discord.gg/6YnHXskF4a).
+
+If you forget the syntax, `ssh srv.us` prints an example.
 
 ## Demo
 
@@ -31,26 +33,9 @@ $ curl https://qp556ma755ktlag5b2xyt334ae.srv.us/
 Hello through srv.us!
 ```
 
-## Notes
+## GitHub & GitLab subdomains
 
-If you forget the syntax, `ssh srv.us` prints an example.
-
-URLs outside [the GitHub and GitLab subdomains](#github--gitlab-subdomains) are derived from the SSH key and number (1 and 2 in examples).
-
-### Staying up
-
-`ssh` eventually terminates when the connection is lost or the service restarted.
-- To reconnect automatically in your shell, use `until ssh srv.us -R 1:localhost:3000; do echo Restarting…; done`.
-- To use as a service on Linux that reconnects automatically, see [systemd service](systemd.md).
-- To use as a launch agent on MacOS that reconnects automatically, see [launchd launch agent](launchd.md).
-
-### Load balancing
-
-When there are multiple tunnels for a URL, client connections are spread between them randomly. We do not perform any health checks.
-
-### GitHub & GitLab subdomains
-
-We look up SSH keys in GitHub and GitLab; if either service authorizes your SSH key for your login, we also expose your services over correspondingly named URLs.
+If either GitHub or GitLab authorizes your SSH key for your login, we also expose your services over correspondingly named URLs.
 
 For example, for login `jdoe`:
 - On GitHub, service 1 is also [jdoe.gh.srv.us](https://jdoe.gh.srv.us/), service 2 [jdoe--2.gh.srv.us](https://jdoe--2.gh.srv.us/);
@@ -64,7 +49,18 @@ Note that this feature is optional and might not work out of the box:
 - If your local username does not match your GitHub/GitLab login, use `ssh your-git-login@srv.us …`;
 - Conversely, if they do match but you do not want to use this feature, use `ssh nomatch@srv.us …`.
 
-### Privacy
+## Staying up
+
+`ssh` eventually terminates when the connection is lost or the service restarted.
+- To reconnect automatically in your shell, use `until ssh srv.us -R 1:localhost:3000; do echo Restarting…; done`.
+- To use as a service on Linux that reconnects automatically, see [systemd service](systemd.md).
+- To use as a launch agent on MacOS that reconnects automatically, see [launchd launch agent](launchd.md).
+
+## Load balancing
+
+When there are multiple tunnels for a URL, client connections are spread between them randomly. We do not perform any health checks.
+
+## Privacy
 
 We do not record or inspect your traffic, or even parse headers (as such, non-HTTP protocols work too).
 
@@ -74,7 +70,7 @@ Those logs never leave the server, and are only ever used for operational purpos
 
 We reserve the right to access your endpoint in the handling of abuse reports.
 
-### That's it?
+## That's it?
 
 Like any tunnel, the bandwidth of your service is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover operating costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
 
