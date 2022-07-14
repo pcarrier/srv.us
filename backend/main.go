@@ -91,8 +91,6 @@ func newServer() *server {
 }
 
 func (s *server) startSession(keyID string, conn *ssh.ServerConn, ch ssh.Channel) {
-	_, _ = ch.Write([]byte("Support: https://discord.gg/6YnHXskF4a\r\n"))
-
 	s.Lock()
 	defer s.Unlock()
 
