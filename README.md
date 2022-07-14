@@ -69,6 +69,10 @@ Those logs never leave the server, and are only ever used for operational purpos
 
 We reserve the right to access your endpoint in the handling of abuse reports.
 
+## Implementation
+
+The [Go backend](https://github.com/pcarrier/srv.us/tree/main/backend) runs on as a systemd service on a single instance and uses certificates provisioned by [Let's Encrypt](https://letsencrypt) using a systemd timer with a corresponding service where `ExecStart=/snap/bin/certbot renew --agree-tos --manual --preferred-challenges=dns --post-hook /usr/local/bin/certbot-renewed --manual-auth-hook /usr/local/bin/certbot-auth` (`certbot-renewed` restarts the backend and `certbot-auth` integrates with CloudFlare's DNS API). I have [plans to scale](https://github.com/pcarrier/srv.us/issues/8) when it becomes necessary.
+
 ## That's it?
 
 Like any tunnel, the bandwidth of your service is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover operating costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
