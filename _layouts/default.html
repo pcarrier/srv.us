@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en-US" }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+{% seo %}
+    <link rel="stylesheet" href="{{ "/assets/css/style.css?v=" | append: site.github.build_revision | relative_url }}" />
+    <link rel="shortcut icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}" />
+  </head>
+  <body>
+    <a href='https://github.com/pcarrier/srv.us' style='position:absolute;top:0;right:0'>
+      <img alt='Fork me on GitHub' loading='lazy' src='https://github.blog/wp-content/uploads/2008/12/forkme_right_orange_ff7600.png'>
+    </a>
+    <div class="container-lg px-3 my-5 markdown-body">
+      {{ content }}
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/4.3.1/anchor.min.js" integrity="sha512-zPB79j2C+3sFS9zcA3vg/z6bVKzJVEyu9pY5w89akQRys76zpAT2t6S3wZKla3QQ14O5l/Yt0RUQ/DHXx82Y5g==" crossorigin="anonymous"></script>
+    <script>anchors.add();</script>
+  </body>
+</html>
