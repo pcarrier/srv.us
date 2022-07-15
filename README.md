@@ -34,11 +34,11 @@ Hello through srv.us!
 
 ## GitHub & GitLab subdomains
 
-If either GitHub or GitLab authorizes your SSH key for your login, we also expose your services over correspondingly named URLs.
+If either GitHub or GitLab authorizes your SSH key for your login, we also expose your tunnels over correspondingly named URLs.
 
 For example, for login `jdoe`:
-- On GitHub, service 1 is also [jdoe.gh.srv.us](https://jdoe.gh.srv.us/), service 2 [jdoe--2.gh.srv.us](https://jdoe--2.gh.srv.us/);
-- On GitLab, service 1 is also [jdoe-1.gl.srv.us](https://jdoe-1.gl.srv.us/), service 2 [jdoe-2.gl.srv.us](https://jdoe-2.gl.srv.us/).
+- On GitHub, tunnel 1 is also [jdoe.gh.srv.us](https://jdoe.gh.srv.us/), tunnel 2 [jdoe--2.gh.srv.us](https://jdoe--2.gh.srv.us/);
+- On GitLab, tunnel 1 is also [jdoe-1.gl.srv.us](https://jdoe-1.gl.srv.us/), tunnel 2 [jdoe-2.gl.srv.us](https://jdoe-2.gl.srv.us/).
 
 *(The discrepancy is due to insufficient constraints on GitLab usernames.
 We need to prevent collisions between users `jdoe` and eg `jdoe--2`,
@@ -75,7 +75,7 @@ The [Go backend](https://github.com/pcarrier/srv.us/tree/main/backend) runs on a
 
 ## That's it?
 
-Like any tunnel, the bandwidth of your service is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover operating costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
+The bandwidth used for your traffic is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover operating costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
 
 There are [a lot of alternatives](https://github.com/anderspitman/awesome-tunneling). As with [ident.me](https://api.ident.me), I hope you enjoy this simple take on a common problem. ❤️
 
