@@ -61,7 +61,7 @@ When there are multiple tunnels for a URL, client connections are spread between
 
 ## Privacy
 
-We do not record or inspect your traffic, or even parse headers (as such, non-HTTP protocols work too).
+We do not record any of your traffic.
 
 However, we log IPs & ports, SSH usernames & keys, connections, tunnels, and byte counts for up to 1 day.
 
@@ -74,6 +74,8 @@ We reserve the right to access your endpoint in the handling of abuse reports.
 The [Go backend](https://github.com/pcarrier/srv.us/tree/main/backend) runs on as a systemd service on a single instance and uses certificates provisioned by [Let's Encrypt](https://letsencrypt) using a systemd timer with a corresponding service where `ExecStart=/snap/bin/certbot renew --agree-tos --manual --preferred-challenges=dns --post-hook /usr/local/bin/certbot-renewed --manual-auth-hook /usr/local/bin/certbot-auth` (`certbot-renewed` restarts the backend and `certbot-auth` integrates with CloudFlare's DNS API). I have [plans to scale](https://github.com/pcarrier/srv.us/issues/8) when it becomes necessary.
 
 ## That's it?
+
+Non-HTTP protocols work too, as we only rely on the protocol to report errors.
 
 The bandwidth used for your traffic is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover operating costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
 

@@ -335,11 +335,10 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 
 func httpErrorOut(conn net.Conn, status string, message string) error {
 	r := bufio.NewReader(conn)
-	_, err := http.ReadRequest(r)
-	if err != nil {
-		log.Printf("Couldn't read a request before erroring out (%v)", err)
+	if _, err := http.ReadRequest(r); err != nil {
+		return err
 	}
-	_, err = conn.Write([]byte(fmt.Sprintf("HTTP/1.1 %s\r\nContent-Length: %d\r\n\r\n%s", status, len(message), message)))
+	_, err := conn.Write([]byte(fmt.Sprintf("HTTP/1.1 %s\r\nContent-Length: %d\r\n\r\n%s", status, len(message), message)))
 	return err
 }
 
