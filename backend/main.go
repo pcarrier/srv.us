@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -264,6 +265,8 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 	}
 
 	if name == *domain {
+		r := bufio.NewReader(https)
+		_, _ = http.ReadRequest(r)
 		_, _ = https.Write([]byte("HTTP/1.1 307 Temporary Redirect\r\nLocation: https://docs.srv.us\r\n\r\n"))
 		return
 	}
@@ -330,8 +333,13 @@ func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
 	wg.Wait()
 }
 
-func httpErrorOut(w io.Writer, status string, message string) error {
-	_, err := w.Write([]byte(fmt.Sprintf("HTTP/1.1 %s\r\nContent-Length: %d\r\n\r\n%s", status, len(message), message)))
+func httpErrorOut(conn net.Conn, status string, message string) error {
+	r := bufio.NewReader(conn)
+	_, err := http.ReadRequest(r)
+	if err != nil {
+		log.Printf("Couldn't read a request before erroring out (%v)", err)
+	}
+	_, err = conn.Write([]byte(fmt.Sprintf("HTTP/1.1 %s\r\nContent-Length: %d\r\n\r\n%s", status, len(message), message)))
 	return err
 }
 
