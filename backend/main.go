@@ -601,7 +601,10 @@ func keyMatchesAccount(domain, user, key string) bool {
 		return false
 	}
 	response, err := http.DefaultClient.Do(req)
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return false
+	}
 	lines := strings.Split(string(body), "\n")
 	for _, line := range lines {
 		parts := strings.SplitN(line, " ", 3)
