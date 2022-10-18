@@ -10,7 +10,7 @@ Yet another solution to **expose any HTTP server to the Internet through a tunne
 
 Got a server running on port 3000? Run `ssh srv.us -R 1:localhost:3000` and it'll respond with its public HTTPS URL(s), available until you close `ssh` with Ctrl-c or Ctrl-d, or get disconnected (see [Staying up](#staying-up)).
 
-It fails with `Permission denied (publickey).`? You need an SSH key; use `ssh-keygen -t ed25519`. Another problem? [Contact support](https://discord.gg/6YnHXskF4a).
+It fails with `Permission denied (publickey).`? You need an SSH key; use `ssh-keygen -t ed25519` (defaults work). Another problem? [Contact support](https://discord.gg/6YnHXskF4a).
 
 If you forget the syntax, `ssh srv.us` prints an example.
 
