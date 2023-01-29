@@ -212,11 +212,6 @@ func (s *server) closeConnection(conn *ssh.ServerConn) {
 }
 
 func (s *server) serveHTTPS() {
-	cert, err := tls.LoadX509KeyPair(*httpsChainPath, *httpsKeyPath)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(*httpsPort))
 	if err != nil {
 		log.Fatalln(err)
@@ -236,15 +231,20 @@ func (s *server) serveHTTPS() {
 			continue
 		}
 
-		go s.serveHTTPSConnection(conn, &cert)
+		go s.serveHTTPSConnection(conn)
 	}
 }
 
-func (s *server) serveHTTPSConnection(raw net.Conn, cert *tls.Certificate) {
+func (s *server) serveHTTPSConnection(raw net.Conn) {
 	name := ""
 
+	cert, err := tls.LoadX509KeyPair(*httpsChainPath, *httpsKeyPath)
+	if err != nil {
+		log.Println(err)
+	}
+
 	c := &tls.Config{
-		Certificates: []tls.Certificate{*cert},
+		Certificates: []tls.Certificate{cert},
 		GetConfigForClient: func(i *tls.ClientHelloInfo) (*tls.Config, error) {
 			name = i.ServerName
 			return nil, nil
