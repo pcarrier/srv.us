@@ -593,16 +593,20 @@ func keyMatchesAccount(domain, user, key string) bool {
 
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://%s/%s.keys", domain, user), nil)
 	if err != nil {
-		log.Printf("Error querying GitHub for %s (%v)", user, err)
-		return false
-	}
-	if err != nil {
-		log.Printf("Error reading response from GitHub for %s (%v)", user, err)
+		log.Printf("Error creating request to %s for %s (%v)", domain, user, err)
 		return false
 	}
 	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false
+	}
+	if err != nil {
+		log.Printf("Error querying %s for %s (%v)", domain, user, err)
+		return false
+	}
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
+		log.Printf("Error reading response from %s for %s (%v)", domain, user, err)
 		return false
 	}
 	lines := strings.Split(string(body), "\n")
