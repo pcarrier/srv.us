@@ -372,7 +372,7 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 	}
 
 	conn, newChans, reqs, err := ssh.NewServerConn(*tcpConn, config)
-	if err != nil {
+	if key == nil || err != nil {
 		return
 	}
 
