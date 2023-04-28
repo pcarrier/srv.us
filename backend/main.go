@@ -364,10 +364,10 @@ func (s *server) serveSSH() {
 }
 
 func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Conn) {
-	var key ssh.PublicKey
+	var key *ssh.PublicKey
 	config := sshConfig
 	config.PublicKeyCallback = func(conn ssh.ConnMetadata, k ssh.PublicKey) (*ssh.Permissions, error) {
-		key = k
+		key = &k
 		return &ssh.Permissions{}, nil
 	}
 
