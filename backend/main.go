@@ -376,7 +376,7 @@ func (s *server) serveSSHConnection(sshConfig *ssh.ServerConfig, tcpConn *net.Co
 		return
 	}
 
-	keyID := base64.RawStdEncoding.EncodeToString(key.Marshal()[:])
+	keyID := base64.RawStdEncoding.EncodeToString((*key).Marshal()[:])
 
 	githubEnabled := false
 	if *githubSubdomains && conn.User() != "nomatch" {
@@ -629,9 +629,9 @@ func (s *server) logStats() {
 	}
 }
 
-func endpointURLs(user string, key ssh.PublicKey, port uint32, githubEnabled bool, gitlabEnabled bool) []string {
+func endpointURLs(user string, key *ssh.PublicKey, port uint32, githubEnabled bool, gitlabEnabled bool) []string {
 	hasher := sha256.New()
-	_, _ = hasher.Write(key.Marshal())
+	_, _ = hasher.Write((*key).Marshal())
 	_, _ = hasher.Write([]byte{0})
 	_, _ = hasher.Write([]byte(strconv.Itoa(int(port))))
 	b32 := b32encoder.EncodeToString(hasher.Sum(nil)[:16])
