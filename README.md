@@ -2,7 +2,12 @@
   <img src="assets/icon.webp" width="128" height="128" alt="Logo"/>
 </p>
 
-<h1 align="center"><tt>ssh srv.us</tt>:<br/>expose local HTTP services online</h1>
+<h1 align="center"><tt>ssh srv.us</tt>:<br/>expose local services over TLS online<br/>(and a pastebin)</h1>
+
+* [Exposing services](#exposing-services)
+* [Sharing files](#sharing-files)
+
+## Exposing services
 
 Yet another solution to **expose any HTTP server to the Internet through a tunnel**. In many situations, [tailscale](https://tailscale.com/) or forwarding ports on your NAT box and [Let's Encrypt](https://letsencrypt.org/) are better options.
 
@@ -14,7 +19,7 @@ It fails with `Permission denied (publickey).`? You need an SSH key; use `ssh-ke
 
 If you forget the syntax, `ssh srv.us` prints an example.
 
-## Demo
+### Demo
 
 Set up 2 tunnels, the first to `localhost` port `3000` and the second to `192.168.0.1` port `80`:
 
@@ -32,7 +37,7 @@ $ curl https://qp556ma755ktlag5b2xyt334ae.srv.us/
 Hello through srv.us!
 ```
 
-## GitHub & GitLab subdomains
+### GitHub & GitLab subdomains
 
 If either GitHub or GitLab authorizes your SSH key for your login, we also expose your tunnels over correspondingly named URLs.
 
@@ -48,18 +53,18 @@ Note that this feature is optional and might not work out of the box:
 - If your local username does not match your GitHub/GitLab login, use `ssh your-git-login@srv.us …`;
 - Conversely, if they do match but you do not want to use this feature, use `ssh nomatch@srv.us …`.
 
-## Staying up
+### Staying up
 
 `ssh` eventually terminates when the connection is lost or the service restarted.
 - To reconnect automatically in your shell, use `until ssh srv.us -R 1:localhost:3000; do echo Restarting…; done`.
 - To use as a service on Linux that reconnects automatically, see [systemd service](systemd.md).
 - To use as a launch agent on MacOS that reconnects automatically, see [launchd launch agent](launchd.md).
 
-## Load balancing
+### Load balancing
 
 When there are multiple tunnels for a URL, client connections are spread between them randomly. We do not perform any health checks.
 
-## Privacy
+### Privacy
 
 We do not record any of your traffic.
 
@@ -69,11 +74,11 @@ Those logs never leave the server, and are only ever used for operational purpos
 
 We reserve the right to access your endpoint in the handling of abuse reports.
 
-## Implementation
+### Implementation
 
 The [Go backend](https://github.com/pcarrier/srv.us/tree/main/backend) runs on as a systemd service on a single instance and uses certificates provisioned by [Let's Encrypt](https://letsencrypt) using a systemd timer with a corresponding service where `ExecStart=/snap/bin/certbot renew --agree-tos --manual --preferred-challenges=dns --post-hook /usr/local/bin/certbot-renewed --manual-auth-hook /usr/local/bin/certbot-auth` (`certbot-renewed` restarts the backend and `certbot-auth` integrates with CloudFlare's DNS API). I have [plans to scale](https://github.com/pcarrier/srv.us/issues/8) when it becomes necessary.
 
-## That's it?
+### That's it?
 
 Non-HTTP protocols work too, as we only rely on the protocol to report errors.
 
@@ -82,3 +87,13 @@ The bandwidth used for your traffic is consumed twice. If [sponsorships](https:/
 There are [a lot of alternatives](https://github.com/anderspitman/awesome-tunneling). As with [ident.me](https://api.ident.me), I hope you enjoy this simple take on a common problem. ❤️
 
 That's it.
+
+## Sharing files
+
+Simple pastebin feature. POST your content and get a URL back, followed by a newline. For example:
+
+```
+$ doas dmesg | curl --data-binary @- https://srv.us
+https://srv.us/e3jyi7vowlwqyzaewdfv444laadkys4a
+$
+```

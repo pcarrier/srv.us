@@ -2,4 +2,4 @@ remote_theme: pages-themes/primer@v0.6.0
 plugins:
 - jekyll-remote-theme
 title: ssh srv.us
-description: expose local HTTP services online
+description: expose local services over TLS online (and a pastebin)

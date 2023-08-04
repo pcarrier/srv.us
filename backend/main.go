@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/base32"
@@ -11,13 +12,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/ssh"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,6 +38,7 @@ var (
 	sshHostKeysPath  = flag.String("ssh-host-keys-path", "/etc/ssh", "Path where ssh_host_ecdsa_key, ssh_host_ed25519_key, ssh_host_rsa_key can be found")
 	githubSubdomains = flag.Bool("github-subdomains", true, "Whether to expose $username.gh subdomains")
 	gitlabSubdomains = flag.Bool("gitlab-subdomains", true, "Whether to expose $username.gl subdomains")
+	pgConn           = flag.String("pg-conn", "", "Postgres connection string")
 )
 
 type remoteForwardRequest struct {
@@ -82,12 +85,14 @@ type server struct {
 	sync.Mutex
 	conns     map[*ssh.ServerConn]*sshConnection
 	endpoints map[string]map[*target]void
+	pool      *pgxpool.Pool
 }
 
-func newServer() *server {
+func newServer(pool *pgxpool.Pool) *server {
 	return &server{
 		conns:     map[*ssh.ServerConn]*sshConnection{},
 		endpoints: map[string]map[*target]void{},
+		pool:      pool,
 	}
 }
 
@@ -265,9 +270,10 @@ func (s *server) serveHTTPSConnection(raw net.Conn) {
 	}
 
 	if name == *domain {
-		r := bufio.NewReader(https)
-		_, _ = http.ReadRequest(r)
-		_, _ = https.Write([]byte("HTTP/1.1 307 Temporary Redirect\r\nLocation: https://docs.srv.us\r\n\r\n"))
+		err = s.serveRoot(https)
+		if err != nil {
+			log.Printf("root failed (%d)", err)
+		}
 		return
 	}
 
@@ -331,6 +337,50 @@ func (s *server) serveHTTPSConnection(raw net.Conn) {
 	}()
 
 	wg.Wait()
+}
+
+func (s *server) serveRoot(https *tls.Conn) error {
+	r := bufio.NewReader(https)
+	req, err := http.ReadRequest(r)
+	if err != nil {
+		return err
+	}
+	if req.Method == "POST" {
+		defer func() {
+			_ = req.Body.Close()
+		}()
+		content, err := io.ReadAll(req.Body)
+		if err != nil {
+			return err
+		}
+		hash := sha1.Sum(content)
+		code := b32encoder.EncodeToString(hash[:])
+		rows, _ := s.pool.Query(context.Background(), "INSERT INTO pastes(code, content) VALUES ($1, $2) ON CONFLICT DO NOTHING", code, content)
+		if rows != nil {
+			rows.Close()
+		}
+		_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\n\r\nhttps://%s/%s\r\n", *domain, code)))
+	} else if req.URL.Path == "/" {
+		_, _ = https.Write([]byte("HTTP/1.1 307 Temporary Redirect\r\nLocation: https://docs.srv.us\r\n\r\n"))
+	} else {
+		code := req.URL.Path[1:]
+		res, _ := s.pool.Query(context.Background(), "SELECT content FROM pastes WHERE code = $1", code)
+		if res != nil {
+			defer res.Close()
+			if res.Next() {
+				cols, err := res.Values()
+				if err != nil {
+					_, _ = https.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+					return err
+				}
+				content := cols[0].([]byte)
+				_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\n\r\n%s", content)))
+			} else {
+				_, _ = https.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+			}
+		}
+	}
+	return nil
 }
 
 func httpErrorOut(conn net.Conn, status string, message string) error {
@@ -660,7 +710,7 @@ func failWithUsage(ch ssh.Channel) {
 }
 
 func addKey(sshConfig *ssh.ServerConfig, path string) {
-	privateBytes, err := ioutil.ReadFile(path)
+	privateBytes, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Failed to read private key %s (%v)", path, err)
 	}
@@ -676,7 +726,13 @@ func addKey(sshConfig *ssh.ServerConfig, path string) {
 func main() {
 	flag.Parse()
 
-	s := newServer()
+	pool, err := pgxpool.Connect(context.Background(), *pgConn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pool.Close()
+
+	s := newServer(pool)
 	go s.logStats()
 	go s.serveHTTPS()
 	s.serveSSH()
