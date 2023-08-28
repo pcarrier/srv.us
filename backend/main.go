@@ -345,7 +345,17 @@ func (s *server) serveRoot(https *tls.Conn) error {
 	if err != nil {
 		return err
 	}
-	if req.Method == "POST" {
+	if req.URL.Path == "/echo" {
+		defer func() {
+			_ = req.Body.Close()
+		}()
+		ct := req.Header.Get("Content-Type")
+		if ct == "" {
+			ct = "text/plain"
+		}
+		_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: %s\r\n\r\n", ct)))
+		_, _ = io.Copy(https, req.Body)
+	} else if req.Method == "POST" {
 		defer func() {
 			_ = req.Body.Close()
 		}()
