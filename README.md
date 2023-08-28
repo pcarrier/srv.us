@@ -6,6 +6,7 @@
 
 * [Exposing services](#exposing-services)
 * [Sharing files](#sharing-files)
+* [`echo`](#echo)
 
 ## Exposing services
 
@@ -96,4 +97,16 @@ Simple pastebin feature. POST your content and get a URL back, followed by a new
 $ doas dmesg | curl --data-binary @- https://srv.us
 https://srv.us/e3jyi7vowlwqyzaewdfv444laadkys4a
 $
+```
+
+## `echo`
+
+Returns what you submit.
+
+```
+$ curl -D- --json $(jo a=42) https://srv.us/echo
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{"a":42}
 ```
