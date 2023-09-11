@@ -675,7 +675,7 @@ func keyMatchesAccount(domain, user, key string) bool {
 		if len(parts) < 2 {
 			continue
 		}
-		if parts[1] == key {
+		if strings.TrimRight(parts[1], "=") == key {
 			return true
 		}
 	}
