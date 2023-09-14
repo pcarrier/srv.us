@@ -7,6 +7,7 @@
 * [Exposing services](#exposing-services)
 * [Sharing files](#sharing-files)
 * [`echo`](#echo)
+* [Finding my IP](#finding-my-ip)
 
 ## Exposing services
 
@@ -85,7 +86,7 @@ Non-HTTP protocols work too, as we only rely on the protocol to report errors.
 
 The bandwidth used for your traffic is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover operating costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
 
-There are [a lot of alternatives](https://github.com/anderspitman/awesome-tunneling). As with [ident.me](https://api.ident.me), I hope you enjoy this simple take on a common problem. ❤️
+There are [a lot of alternatives](https://github.com/anderspitman/awesome-tunneling). I hope you enjoy this simple take on a common problem. ❤️
 
 That's it.
 
@@ -110,3 +111,7 @@ Content-Type: application/json
 
 {"a":42}
 ```
+
+## Finding my IP
+
+Please take a look at [ident.me](https://api.ident.me).
