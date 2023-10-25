@@ -84,6 +84,25 @@ The [Go backend](https://github.com/pcarrier/srv.us/tree/main/backend) runs on a
 
 Non-HTTP protocols work too, as we only rely on the protocol to report errors.
 
+For instance, you can expose your ssh port using
+```
+ssh srv.us -R 1:localhost:22
+```
+de-tls the URL through stunnel
+```
+; sample for stunnel.conf
+[ssh]
+client = yes
+accept = 127.0.0.1:2022
+connect = https://<the response URL from previous ssh command>:443
+```
+and connect to it using
+```
+ssh -i <path to your ssh private key> -p 2022 <your username on the server>@127.0.0.1
+```
+
+### Operational cost
+
 The bandwidth used for your traffic is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover operating costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
 
 There are [a lot of alternatives](https://github.com/anderspitman/awesome-tunneling). I hope you enjoy this simple take on a common problem. ❤️
