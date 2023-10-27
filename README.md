@@ -82,7 +82,7 @@ The [Go backend](https://github.com/pcarrier/srv.us/tree/main/backend) runs on a
 
 ### That's it?
 
-Non-HTTP protocols work too, as we only rely on the protocol to report errors.
+Non-HTTP protocols work too, as we only rely on the protocol to report errors. See [non-http protocols](non-http.md).
 
 The bandwidth used for your traffic is consumed twice. If [sponsorships](https://github.com/sponsors/pcarrier) don't cover operating costs and they increase significantly, heavy usage may require financial contribution to avoid throttling.
 
