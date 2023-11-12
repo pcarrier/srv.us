@@ -32,7 +32,7 @@ var (
 
 	domain           = flag.String("domain", "srv.us", "Domain name under which we run")
 	sshPort          = flag.Int("ssh-port", 22, "Port for SSH to bind to")
-	httpsPort        = flag.Int("https-port", 443, "Port for SSH to bind to")
+	httpsPort        = flag.Int("https-port", 443, "Port for HTTPS to bind to")
 	httpsChainPath   = flag.String("https-chain-path", "/etc/letsencrypt/live/srv.us/fullchain.pem", "Path to the certificate chain")
 	httpsKeyPath     = flag.String("https-key-path", "/etc/letsencrypt/live/srv.us/privkey.pem", "Path to the private key")
 	sshHostKeysPath  = flag.String("ssh-host-keys-path", "/etc/ssh", "Path where ssh_host_ecdsa_key, ssh_host_ed25519_key, ssh_host_rsa_key can be found")
