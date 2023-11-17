@@ -406,7 +406,7 @@ func (s *server) serveSSH() {
 	sshConfig := ssh.ServerConfig{
 		ServerVersion: "SSH-2.0-" + *domain + "-1.0",
 		BannerCallback: func(conn ssh.ConnMetadata) string {
-			return "Usage: ssh " + *domain + " -R 1:localhost:3000 -R 2:192.168.0.1:80 …\r\nPermission denied? First generate a key with ssh-keygen -t ed25519\r\n"
+			return "Usage: ssh " + *domain + " -R 1:localhost:3000 -R 2:192.168.0.1:80 …\r\nIf you get a Permission denied error, first generate a key with ssh-keygen -t ed25519\r\n"
 		},
 	}
 	addKey(&sshConfig, *sshHostKeysPath+"/ssh_host_ecdsa_key")
