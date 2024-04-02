@@ -7,6 +7,7 @@
 * [Exposing services](#exposing-services)
 * [Sharing files](#sharing-files)
 * [`echo`](#echo)
+* [`d`](#d)
 * [Finding my IP](#finding-my-ip)
 
 ## Exposing services
@@ -111,6 +112,10 @@ Content-Type: application/json
 
 {"a":42}
 ```
+
+## `d`
+
+Embed a page in the URL itself, in its client-only side. [Example](https://srv.us/d#%3Ch1%3EDemo%3C/h1%3E), [original idea](https://news.ycombinator.com/item?id=39905866).
 
 ## Finding my IP
 

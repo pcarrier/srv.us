@@ -355,6 +355,11 @@ func (s *server) serveRoot(https *tls.Conn) error {
 		}
 		_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: %s\r\n\r\n", ct)))
 		_, _ = io.Copy(https, req.Body)
+	} else if req.URL.Path == "/d" {
+		defer func() {
+			_ = req.Body.Close()
+		}()
+		_, _ = https.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><head><script>document.body.innerHTML = decodeURI(window.location.hash.substring(1))</script></head></html>"))
 	} else if req.Method == "POST" {
 		defer func() {
 			_ = req.Body.Close()
