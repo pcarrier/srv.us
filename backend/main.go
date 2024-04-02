@@ -344,7 +344,7 @@ func (s *server) serveRoot(https *tls.Conn) error {
 	r := bufio.NewReader(https)
 	req, err := http.ReadRequest(r)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not read request: %w", err)
 	}
 	if req.URL.Path == "/echo" {
 		defer func() {
@@ -360,14 +360,14 @@ func (s *server) serveRoot(https *tls.Conn) error {
 		defer func() {
 			_ = req.Body.Close()
 		}()
-		_, _ = https.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><head><script>document.body.innerHTML = decodeURI(window.location.hash.substring(1))</script></head></html>"))
+		_, _ = https.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><script>document.body.innerHTML = decodeURI(window.location.hash.substring(1))</script></body></html>"))
 	} else if req.Method == "POST" {
 		defer func() {
 			_ = req.Body.Close()
 		}()
 		content, err := io.ReadAll(req.Body)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not read request body: %w", err)
 		}
 		hash := sha1.Sum(content)
 		code := b32encoder.EncodeToString(hash[:])
@@ -387,7 +387,7 @@ func (s *server) serveRoot(https *tls.Conn) error {
 				cols, err := res.Values()
 				if err != nil {
 					_, _ = https.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
-					return err
+					return fmt.Errorf("could not read paste: %w", err)
 				}
 				content := cols[0].([]byte)
 				_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\n\r\n%s", content)))
