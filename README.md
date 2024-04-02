@@ -2,7 +2,7 @@
   <img src="assets/icon.webp" width="128" height="128" alt="Logo"/>
 </p>
 
-<h1 align="center"><tt>ssh srv.us</tt>:<br/>expose local services over TLS online<br/>(and a pastebin)</h1>
+<h1 align="center"><tt>ssh srv.us</tt>:<br/>expose local services over TLS online<br/>(and unrelated small services)</h1>
 
 * [Exposing services](#exposing-services)
 * [Sharing files](#sharing-files)
