@@ -12,8 +12,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
 	"math/rand"
@@ -25,6 +23,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/jackc/pgx/v4/pgxpool"
+	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -272,7 +273,7 @@ func (s *server) serveHTTPSConnection(raw net.Conn) {
 	if name == *domain {
 		err = s.serveRoot(https)
 		if err != nil {
-			log.Printf("root failed (%d)", err)
+			log.Printf("root failed (%v)", err)
 		}
 		return
 	}
