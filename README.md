@@ -9,6 +9,7 @@
 * [`echo`](#echo)
 * [`d`](#d)
 * [Finding my IP](#finding-my-ip)
+* [Hosting static websites](#hosting-static-websites)
 
 ## Exposing services
 
@@ -120,3 +121,7 @@ Embed a page in the URL itself, in its client-only side. [Example](https://srv.u
 ## Finding my IP
 
 Please take a look at [ident.me](https://api.ident.me).
+
+## Hosting static websites
+
+Please take a look at [xmit.co](https://xmit.co).
