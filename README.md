@@ -13,7 +13,7 @@
 
 ## Exposing services
 
-Yet another solution to **expose any HTTP server to the Internet through a tunnel**. In many situations, [tailscale](https://tailscale.com/) or forwarding ports on your NAT box and [Let's Encrypt](https://letsencrypt.org/) are better options.
+Yet another solution to **expose any HTTP server to the Internet through a tunnel**.
 
 **Free & [fully open source](https://github.com/pcarrier/srv.us). Stable URLs derived from your SSH key. No accounts. Nothing to install outside [Windows](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse).**
 
