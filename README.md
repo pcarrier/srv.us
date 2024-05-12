@@ -8,6 +8,7 @@
 * [Sharing files](#sharing-files)
 * [`echo`](#echo)
 * [`d`](#d)
+* [`tarpit`](#tarpit)
 * [Finding my IP](#finding-my-ip)
 * [Hosting static websites](#hosting-static-websites)
 
@@ -117,6 +118,10 @@ Content-Type: application/json
 ## `d`
 
 Embed a page in the URL itself, in its client-only side. [Example](https://srv.us/d#%3Ch1%3EDemo%3C/h1%3E), [original idea](https://news.ycombinator.com/item?id=39905866).
+
+## `tarpit`
+
+That download won't finish. [You've been warned](https://srv.us/tarpit).
 
 ## Finding my IP
 

@@ -361,6 +361,14 @@ func (s *server) serveRoot(https *tls.Conn) error {
 			_ = req.Body.Close()
 		}()
 		_, _ = https.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><script>document.body.innerHTML = decodeURI(window.location.hash.substring(1))</script></body></html>"))
+	} else if req.URL.Path == "/tarpit" {
+		_, _ = https.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"))
+		for {
+			if _, err = https.Write([]byte(".")); err != nil {
+				return nil
+			}
+			time.Sleep(1 * time.Second)
+		}
 	} else if req.Method == "POST" {
 		defer func() {
 			_ = req.Body.Close()
