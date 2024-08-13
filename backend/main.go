@@ -356,6 +356,12 @@ func (s *server) serveRoot(https *tls.Conn) error {
 		}
 		_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: %s\r\n\r\n", ct)))
 		_, _ = io.Copy(https, req.Body)
+	} else if req.URL.Path == "/h" {
+		defer func() {
+			_ = req.Body.Close()
+		}()
+		_, _ = https.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"))
+		_ = req.Header.Write(https)
 	} else if req.URL.Path == "/d" {
 		defer func() {
 			_ = req.Body.Close()

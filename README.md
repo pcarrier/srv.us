@@ -7,6 +7,7 @@
 * [Exposing services](#exposing-services)
 * [Sharing files](#sharing-files)
 * [`echo`](#echo)
+* [`h`](#h)
 * [`d`](#d)
 * [`tarpit`](#tarpit)
 * [Finding my IP](#finding-my-ip)
@@ -113,6 +114,16 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {"a":42}
+```
+
+## [`h`](https://srv.us/h)
+
+Returns your headers.
+
+```
+$ curl https://srv.us/h
+Accept: */*
+User-Agent: curl/8.9.1
 ```
 
 ## `d`
