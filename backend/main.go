@@ -12,6 +12,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/likexian/doh"
+	"github.com/likexian/doh/dns"
 	"io"
 	"log"
 	"math/rand"
@@ -87,6 +89,7 @@ type server struct {
 	conns     map[*ssh.ServerConn]*sshConnection
 	endpoints map[string]map[*target]void
 	pool      *pgxpool.Pool
+	dns       *doh.DoH
 }
 
 func newServer(pool *pgxpool.Pool) *server {
@@ -94,6 +97,7 @@ func newServer(pool *pgxpool.Pool) *server {
 		conns:     map[*ssh.ServerConn]*sshConnection{},
 		endpoints: map[string]map[*target]void{},
 		pool:      pool,
+		dns:       doh.Use(doh.GoogleProvider, doh.CloudflareProvider),
 	}
 }
 
@@ -156,6 +160,24 @@ func (s *server) pickTarget(endpoint string) *target {
 	s.Lock()
 	ep, found := s.endpoints[endpoint]
 	s.Unlock()
+
+	if !found {
+		resp, err := s.dns.Query(context.Background(), dns.Domain(endpoint), "CNAME")
+		if err != nil {
+			log.Printf("Could not resolve %s (%v)", endpoint, err)
+			return nil
+		}
+
+		s.Lock()
+		for _, rec := range resp.Answer {
+			host := strings.TrimSuffix(rec.Data, ".")
+			ep, found = s.endpoints[host]
+			if found {
+				break
+			}
+		}
+		s.Unlock()
+	}
 
 	if !found {
 		return nil
