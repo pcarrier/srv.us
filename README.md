@@ -10,6 +10,7 @@
 * [`h`](#h)
 * [`d`](#d)
 * [`tarpit`](#tarpit)
+* [`r`](#r)
 * [Finding my IP](#finding-my-ip)
 * [Hosting static websites](#hosting-static-websites)
 
@@ -129,6 +130,10 @@ User-Agent: curl/8.9.1
 ## `d`
 
 Embed a page in the URL itself, in its client-only side. [Example](https://srv.us/d#%3Ch1%3EDemo%3C/h1%3E), [original idea](https://news.ycombinator.com/item?id=39905866).
+
+## [`r`](https://srv.us/r/)
+
+Forever redirected. Useful to test agents.
 
 ## `tarpit`
 

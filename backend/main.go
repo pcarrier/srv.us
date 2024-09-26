@@ -12,8 +12,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/likexian/doh"
-	"github.com/likexian/doh/dns"
 	"io"
 	"log"
 	"math/rand"
@@ -25,6 +23,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/likexian/doh"
+	"github.com/likexian/doh/dns"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/ssh"
@@ -397,6 +399,8 @@ func (s *server) serveRoot(https *tls.Conn) error {
 			}
 			time.Sleep(1 * time.Second)
 		}
+	} else if strings.HasPrefix(req.URL.Path, "/r/") {
+		_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 307 Temporary Redirect\r\nLocation: /r/%v\r\n\r\n", uuid.New())))
 	} else if req.Method == "POST" {
 		defer func() {
 			_ = req.Body.Close()
