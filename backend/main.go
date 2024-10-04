@@ -384,7 +384,7 @@ func (s *server) serveRoot(https *tls.Conn) error {
 		defer func() {
 			_ = req.Body.Close()
 		}()
-		_, _ = https.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"))
+		_, _ = https.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\n"))
 		_ = req.Header.Write(https)
 	} else if req.URL.Path == "/d" {
 		defer func() {
