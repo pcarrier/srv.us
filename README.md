@@ -18,7 +18,7 @@
 
 Yet another solution to **expose any HTTP server to the Internet through a tunnel**.
 
-**Free & [fully open source](https://github.com/pcarrier/srv.us). Stable URLs derived from your SSH key. No accounts. Nothing to install outside [Windows](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse).**
+**Free & [fully open source](https://github.com/pcarrier/srv.us). Stable URLs derived from your SSH key. No accounts. Nothing to install outside [Windows](https://learn.microsoft.com/en-us/windows/terminal/tutorials/ssh).**
 
 Got a server running on port 3000? Run `ssh srv.us -R 1:localhost:3000` and it'll respond with its public HTTPS URL(s), available until you close `ssh` with Ctrl-c or Ctrl-d, or get disconnected (see [Staying up](#staying-up)).
 
