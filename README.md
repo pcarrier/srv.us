@@ -141,8 +141,12 @@ That download won't finish. [You've been warned](https://srv.us/tarpit).
 
 ## Finding my IP
 
-Please take a look at [ident.me](https://api.ident.me).
+Please take a look at [ident.me](https://www.ident.me).
 
 ## Hosting static websites
 
 Please take a look at [xmit.co](https://xmit.co).
+
+## Support
+
+Please donate through [ko-fi](https://ko-fi.com/pcarrier/tip) or [GitHub](https://github.com/sponsors/pcarrier).
