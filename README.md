@@ -13,6 +13,7 @@
 * [`r`](#r)
 * [Finding my IP](#finding-my-ip)
 * [Hosting static websites](#hosting-static-websites)
+* [Donations](#donations)
 
 ## Exposing services
 
@@ -147,6 +148,6 @@ Please take a look at [ident.me](https://www.ident.me).
 
 Please take a look at [xmit.co](https://xmit.co).
 
-## Support
+## Donations
 
 Please donate through [ko-fi](https://ko-fi.com/pcarrier/tip) or [GitHub](https://github.com/sponsors/pcarrier).
