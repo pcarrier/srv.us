@@ -119,6 +119,9 @@ func (s *server) newPort(conn *ssh.ServerConn) uint16 {
 	defer s.Unlock()
 
 	s.conns[conn].lastPort++
+	if s.conns[conn].lastPort == 0 {
+		s.conns[conn].lastPort = 1
+	}
 	return s.conns[conn].lastPort
 }
 
@@ -152,10 +155,12 @@ func (s *server) removeEndpointTarget(endpoint string, t *target) {
 	}
 
 	sConn := s.conns[t.Remote]
-	delete(sConn.TunnelRefs, &tunnelRef{
-		Endpoint: endpoint,
-		Target:   t,
-	})
+	for ref := range sConn.TunnelRefs {
+		if ref.Endpoint == endpoint && ref.Target == t {
+			delete(sConn.TunnelRefs, ref)
+			break
+		}
+	}
 }
 
 func (s *server) pickTarget(endpoint string) *target {
@@ -187,6 +192,9 @@ func (s *server) pickTarget(endpoint string) *target {
 		var candidates []*target
 		for c := range ep {
 			candidates = append(candidates, c)
+		}
+		if len(candidates) == 0 {
+			return nil
 		}
 		return candidates[rand.Intn(len(candidates))]
 	}
@@ -407,11 +415,19 @@ func (s *server) serveRoot(https *tls.Conn) error {
 		}()
 		content, err := io.ReadAll(req.Body)
 		if err != nil {
-			return fmt.Errorf("could not read request body: %w", err)
+			_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 400 Bad Request\r\n\r\nFailed to read request body: %v", err)))
+			return fmt.Errorf("could not read request body: %w",
+			err)
 		}
 		hash := sha1.Sum(content)
 		code := b32encoder.EncodeToString(hash[:])
-		rows, _ := s.pool.Query(context.Background(), "INSERT INTO pastes(code, content) VALUES ($1, $2) ON CONFLICT DO NOTHING", code, content)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		rows, err := s.pool.Query(ctx, "INSERT INTO pastes(code, content) VALUES ($1, $2) ON CONFLICT DO NOTHING", code, content)
+		if err != nil {
+			_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 500 Internal Server Error\r\n\r\nFailed to store paste: %v", err)))
+			return fmt.Errorf("could not store paste: %w", err)
+		}
 		if rows != nil {
 			rows.Close()
 		}
@@ -420,7 +436,13 @@ func (s *server) serveRoot(https *tls.Conn) error {
 		_, _ = https.Write([]byte("HTTP/1.1 307 Temporary Redirect\r\nLocation: https://docs.srv.us\r\n\r\n"))
 	} else {
 		code := req.URL.Path[1:]
-		res, _ := s.pool.Query(context.Background(), "SELECT content FROM pastes WHERE code = $1", code)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		res, err := s.pool.Query(ctx, "SELECT content FROM pastes WHERE code = $1", code)
+		if err != nil {
+			_, _ = https.Write([]byte(fmt.Sprintf("HTTP/1.1 500 Internal Server Error\r\n\r\nDatabase error: %v", err)))
+			return fmt.Errorf("could not query paste: %w", err)
+		}
 		if res != nil {
 			defer res.Close()
 			if res.Next() {
@@ -710,12 +732,10 @@ func keyMatchesAccount(domain, user, key string) bool {
 	}
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return false
-	}
-	if err != nil {
 		log.Printf("Error querying %s for %s (%v)", domain, user, err)
 		return false
 	}
+	defer response.Body.Close()
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("Error reading response from %s for %s (%v)", domain, user, err)
@@ -781,6 +801,7 @@ func addKey(sshConfig *ssh.ServerConfig, path string) {
 
 func main() {
 	flag.Parse()
+	rand.Seed(time.Now().UnixNano())
 
 	pool, err := pgxpool.Connect(context.Background(), *pgConn)
 	if err != nil {
