@@ -1,7 +1,7 @@
 .PHONY: deploy run tunnel
 
 srvus: main.go
-	GOOS=linux GOARCH=amd64 go build -o srvus .
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o srvus .
 
 privkey.pem:
 	openssl ecparam -genkey -name prime256v1 -out privkey.pem
