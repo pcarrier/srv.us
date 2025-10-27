@@ -1,3 +1,4 @@
-.idea/
+/.direnv/
+/.idea/
 /Gemfile.lock
 /_site/
